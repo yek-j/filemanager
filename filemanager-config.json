@@ -1,0 +1,7 @@
+{
+  "source_path": "/path/to/root",
+  "backup_path": "/path/to/backup", 
+  "target_folders": ["paper"],
+  "file_depth": 3,
+  "dry_run": true
+}
