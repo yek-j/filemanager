@@ -20,7 +20,7 @@ FileManager는 패턴 기반으로 파일을 정리하는 도구입니다. 안�
 ```json
 {
   "source_path": "/path/to/root",
-  "backup_path": "/path/to/backup",
+  "work_path": "/path/to/work",
   "target_folders": ["paper", "homework"],
   "target_depth": 3,
   "dry_run": true
@@ -32,7 +32,7 @@ FileManager는 패턴 기반으로 파일을 정리하는 도구입니다. 안�
 | 항목 | 설명 | 예시 |
 |------|------|------|
 | `source_path` | 정리할(복사할) 루트 폴더 경로 | `"/home/user/documents"` |
-| `work_path` | 작업 경로(복사할 위치) | `"/home/user/backup"` |
+| `work_path` | 작업 경로(복사할 위치) | `"/home/user/work"` |
 | `target_folders` | 처리할 대상 폴더들(root 하위 폴더 기준) | `["paper", "homework", "assignments"]` |
 | `target_depth` | target_folder 기준 탐색 깊이 | `3` (paper → 10 → 1001 → 파일) |
 | `dry_run` | 미리보기 모드 (실제 실행 안함) | `true` / `false` |
