@@ -8,7 +8,7 @@ import (
 // Config 구조체 - JSON 설정과 파일 매핑
 type Config struct {
 	SourcePath    string   `json:"source_path"`
-	BackupPath    string   `json:"backup_path"`
+	WorkPath      string   `json:"work_path"`
 	TargetFolders []string `json:"target_folders"`
 	TargetDepth   int      `json:"file_depth"`
 	DryRun        bool     `json:"dry_run"`
