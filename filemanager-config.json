@@ -1,6 +1,6 @@
 {
   "source_path": "/path/to/root",
-  "working_path": "/path/to/work", 
+  "work_path": "/path/to/work", 
   "target_folders": ["paper"],
   "file_depth": 3,
   "dry_run": true

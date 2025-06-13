@@ -113,3 +113,19 @@ func ScanFiles(cfg *config.Config) (*ScanReport, error) {
 
 	return scanReport, nil
 }
+
+// IsWorkPathEmpty: 폴더가 없으면 true, 폴더가 있지만 비어있으면 true,
+// 폴더에 파일/폴더 있으면 false 반환
+func IsWorkPathEmpty(workPath string) bool {
+	workDir, err := os.ReadDir(workPath)
+
+	if os.IsNotExist(err) {
+		return true // 폴더 없음
+	}
+
+	if err != nil {
+		return false // error
+	}
+
+	return len(workDir) == 0 // 빈 폴더면 true
+}
