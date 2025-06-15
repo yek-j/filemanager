@@ -3,13 +3,23 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/yek-j/filemanager/config"
+	"github.com/yek-j/filemanager/plugins"
 	"github.com/yek-j/filemanager/utils"
 )
 
 func main() {
-	cfg, err := config.LoadConfig("window-test.json")
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: ./filemanager <config-file>")
+		fmt.Println("Example: ./filemanager my-config.json")
+		os.Exit(1)
+	}
+
+	configPath := os.Args[1]
+
+	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		log.Fatal("Config load failed: ", err)
 	}
@@ -17,8 +27,8 @@ func main() {
 	fmt.Printf("Work path: %s\n", cfg.WorkPath)
 	fmt.Println("✅ Config loaded successfully")
 
-	// 2. ScanFiles 테스트
-	fmt.Println("\n--- Testing ScanFiles ---")
+	// ScanFiles
+	fmt.Println("\n--- ScanFiles ---")
 	scanReport, err := utils.ScanFiles(cfg)
 	if err != nil {
 		log.Fatal("scanFiles failed: ", err)
@@ -29,8 +39,8 @@ func main() {
 	fmt.Printf("Ready to process: %v\n", scanReport.ReadyToProcess)
 	fmt.Printf("Total files: %d\n", scanReport.TotalFiles)
 
-	// 3. copyRootDir 테스트
-	fmt.Println("\n--- Testing copyRootDir ---")
+	// copyRootDir
+	fmt.Println("\n--- copyRootDir ---")
 	if scanReport.ReadyToProcess {
 		err = utils.CopyRootDir(cfg)
 
@@ -38,5 +48,19 @@ func main() {
 			log.Fatal("CopyRootDir failed: ", err)
 		}
 		fmt.Println("✅ Copy completed successfully")
+
+		// 플러그인 실행
+		plugin, err := plugins.GetPlugin(cfg.Plugin)
+		if err != nil {
+			log.Fatal("Plugin not found: ", err)
+		}
+
+		fmt.Printf("Plugin: %s\n", plugin.GetName())
+		err = plugin.Process(cfg)
+
+		if err != nil {
+			log.Fatal("Plugin process failed: ", err)
+		}
+		fmt.Println("✅ Plugin processing completed")
 	}
 }
