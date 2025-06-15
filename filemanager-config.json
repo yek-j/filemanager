@@ -3,5 +3,5 @@
   "work_path": "/path/to/work", 
   "target_folders": ["paper"],
   "file_depth": 3,
-  "dry_run": true
+  "plugin": "underscore_number"
 }
