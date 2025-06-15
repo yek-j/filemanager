@@ -11,7 +11,7 @@ type Config struct {
 	WorkPath      string   `json:"work_path"`
 	TargetFolders []string `json:"target_folders"`
 	TargetDepth   int      `json:"file_depth"`
-	DryRun        bool     `json:"dry_run"`
+	Plugin        string   `json:"plugin"`
 }
 
 // LoadConfig JSON 파일에서 설정을 읽어 온다.
