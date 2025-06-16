@@ -52,5 +52,28 @@ FileManager는 패턴 기반으로 파일을 정리하는 도구입니다. 안�
 - **설명**: `문자열_숫자.확장자` 패턴의 파일을 정리
 - **동작**: 각 폴더 내에서 같은 접두사 중 가장 큰 숫자 파일만 남기고 `prefix_원하는숫자` 형태로 일괄 변경
 - **예시**: `file_123.pdf`, `file_456.pdf` → `file_456.pdf` 외에 같은 접두사 파일은 삭제하고, `file_1.pdf`로 변경
+- **로그파일**: 파일 처리 완료 후 WORK_PATH에 삭제된 파일, 이름 변경된 파일, 총 처리된 파일에 대한 로그 파일 생성
 
 
+## Linux에서 사용
+
+### 1. 빌드
+```bash
+GOOS=linux GOARCH=amd64 go build -o filemanager-linux
+```
+
+### 2. 리눅스에서 실행 권한 설정
+```bash
+chmod +x filemanger-linux 
+```
+
+### 설정 파일 준비 
+```bash
+# 샘플 설정파일 복사 후 수정해 사용
+cp filemanager-config.json my-config.json 
+```
+
+### 실행
+```bash
+./filemanager-linux my-config.json`
+```
