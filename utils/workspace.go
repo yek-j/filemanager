@@ -55,7 +55,7 @@ func CopyRootDir(cfg *config.Config) error {
 
 // copyWithCommand: 리눅스 명령어를 이용한 copy
 func copyWithCommand(sourcePath, workPath string) error {
-	cmd := exec.Command("cp", "-r", sourcePath, workPath)
+	cmd := exec.Command("cp", "-r", sourcePath+"/.", workPath)
 
 	err := cmd.Run()
 

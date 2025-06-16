@@ -82,12 +82,10 @@ func ScanFiles(cfg *config.Config) (*ScanReport, error) {
 				scanReport.FoldersByDepth[depth] = append(scanReport.FoldersByDepth[depth], path)
 			}
 		} else {
-			if depth == cfg.TargetDepth { // TargetDepth의 파일을 확인
-				ext := filepath.Ext(info.Name())
-				if ext != "" {
-					scanReport.FilesByExt[ext]++
-					scanReport.TotalFiles++
-				}
+			ext := filepath.Ext(info.Name())
+			if ext != "" {
+				scanReport.FilesByExt[ext]++
+				scanReport.TotalFiles++
 			}
 		}
 		return nil

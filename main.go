@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/yek-j/filemanager/config"
 	"github.com/yek-j/filemanager/plugins"
@@ -42,6 +43,10 @@ func main() {
 	// copyRootDir
 	fmt.Println("\n--- copyRootDir ---")
 	if scanReport.ReadyToProcess {
+		workStartTime := time.Now()
+		fmt.Printf("Starting file processing at %s\n", workStartTime.Format("15:04:05"))
+
+		copyStartTime := time.Now()
 		err = utils.CopyRootDir(cfg)
 
 		if err != nil {
@@ -49,7 +54,11 @@ func main() {
 		}
 		fmt.Println("✅ Copy completed successfully")
 
+		copyDuration := time.Since(copyStartTime)
+		fmt.Printf("✅ Backup completed in %v\n", copyDuration)
+
 		// 플러그인 실행
+		processStartTime := time.Now()
 		plugin, err := plugins.GetPlugin(cfg.Plugin)
 		if err != nil {
 			log.Fatal("Plugin not found: ", err)
@@ -62,5 +71,13 @@ func main() {
 			log.Fatal("Plugin process failed: ", err)
 		}
 		fmt.Println("✅ Plugin processing completed")
+		processDuration := time.Since(processStartTime)
+		fmt.Printf("✅ File processing completed in %v\n", processDuration)
+
+		// 전체 작업 시간
+		totalWorkTime := time.Since(workStartTime)
+		fmt.Printf("Total work time: %v (Copy: %v, Process: %v)\n", totalWorkTime, copyDuration, processDuration)
+	} else {
+		fmt.Println("CHECK: System not ready for processing")
 	}
 }

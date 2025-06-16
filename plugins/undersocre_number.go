@@ -1,10 +1,12 @@
 package plugins
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/yek-j/filemanager/config"
 )
@@ -17,7 +19,17 @@ type FileInfo struct {
 	FullPath string
 }
 
+type ProcessLog struct {
+	DeletedFiles []string          // 삭제된 파일 리스트
+	RenamedFiles map[string]string // 원본->새이름
+	TotalFiles   int
+}
+
 func (u *UnderscoreNumber) Process(cfg *config.Config) error {
+	totalProcessed := 0
+	log := &ProcessLog{
+		RenamedFiles: make(map[string]string),
+	}
 	// 작업할 폴더들 찾기
 	// cfg.WorkPath + cfg.TargetFolders + cfg.TargetDepth 조합
 	// 원하는 위치에서 파일 수집
@@ -26,16 +38,28 @@ func (u *UnderscoreNumber) Process(cfg *config.Config) error {
 		basePath := filepath.Join(cfg.WorkPath, targetFolder)
 
 		// target_depth로 들어가기
-		err := processTargetDepth(basePath, cfg.TargetDepth)
+		processed, err := processTargetDepth(basePath, cfg.TargetDepth, log)
 		if err != nil {
 			return err
 		}
+		totalProcessed += processed
 	}
 
+	log.TotalFiles = totalProcessed
+
+	logFileName := fmt.Sprintf("underscore_number_log_%s.txt",
+		time.Now().Format("20060102_150405"))
+	logPath := filepath.Join(cfg.WorkPath, logFileName)
+
+	if err := writeLogFile(log, logPath); err != nil {
+		fmt.Printf("Warning: Failed to write log file: %v\n", err)
+	} else {
+		fmt.Printf("📝 Log file created: %s\n", logPath)
+	}
 	return nil
 }
 
-func processTargetDepth(basePath string, depth int) error {
+func processTargetDepth(basePath string, depth int, log *ProcessLog) (int, error) {
 	currentDirs := []string{basePath}
 
 	// 'depth - 1' 반복으로 최종 폴더 찾기
@@ -61,21 +85,24 @@ func processTargetDepth(basePath string, depth int) error {
 	}
 
 	// 최종 폴더들에서 파일을 처리
+	processedFilesCount := 0
 	for _, finalDir := range currentDirs {
-		if err := processFilesInDirectory(finalDir); err != nil {
-			return err
+		processedFilesCount, err := processFilesInDirectory(finalDir, log)
+		if err != nil {
+			return processedFilesCount, err
 		}
 	}
 
-	return nil
+	return processedFilesCount, nil
 }
 
-func processFilesInDirectory(finalDir string) error {
+func processFilesInDirectory(finalDir string, log *ProcessLog) (int, error) {
 	// 폴더 안의 파일들만 읽기(하위폴더 제외)
 	entires, err := os.ReadDir(finalDir)
+	processFileCount := 0
 
 	if err != nil {
-		return err
+		return processFileCount, err
 	}
 
 	//prefix_숫자.확장자 패턴인 파일만 읽기
@@ -116,17 +143,43 @@ func processFilesInDirectory(finalDir string) error {
 		for _, file := range files {
 			// 나머지 파일 삭제
 			if file.FullPath != maxFile.FullPath {
+				log.DeletedFiles = append(log.DeletedFiles, file.FullPath)
 				os.Remove(file.FullPath)
+				processFileCount++
 			} else {
 				// 파일 이름 변경
 				prefix, _, ext, _ := parseFileName(file.FileName)
 				newName := prefix + "_1" + ext
 				newPath := filepath.Join(finalDir, newName)
 
+				log.RenamedFiles[file.FullPath] = newPath
 				os.Rename(file.FullPath, newPath)
+				processFileCount++
 			}
 		}
+	}
 
+	return processFileCount, nil
+}
+
+func writeLogFile(log *ProcessLog, logPath string) error {
+	file, err := os.Create(logPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	fmt.Fprintf(file, "FileManager Processing Log\n")
+	fmt.Fprintf(file, "Total files processed: %d\n\n", log.TotalFiles)
+
+	fmt.Fprintf(file, "=== DELETED FILES ===\n")
+	for _, deleted := range log.DeletedFiles {
+		fmt.Fprintf(file, "DELETED: %s\n", deleted)
+	}
+
+	fmt.Fprintf(file, "\n=== RENAMED FILES ===\n")
+	for original, renamed := range log.RenamedFiles {
+		fmt.Fprintf(file, "RENAMED: %s -> %s\n", original, renamed)
 	}
 
 	return nil
