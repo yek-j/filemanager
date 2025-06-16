@@ -87,12 +87,12 @@ func processTargetDepth(basePath string, depth int, log *ProcessLog) (int, error
 	// 최종 폴더들에서 파일을 처리
 	processedFilesCount := 0
 	for _, finalDir := range currentDirs {
-		processedFilesCount, err := processFilesInDirectory(finalDir, log)
+		count, err := processFilesInDirectory(finalDir, log)
+		processedFilesCount += count
 		if err != nil {
 			return processedFilesCount, err
 		}
 	}
-
 	return processedFilesCount, nil
 }
 
