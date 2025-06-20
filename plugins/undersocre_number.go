@@ -200,6 +200,10 @@ func parseFileName(filename string) (prefix string, number int, ext string, vali
 	prefix = nameWithoutExt[:lastUnderscoreIndex]
 	numberStr := nameWithoutExt[lastUnderscoreIndex+1:]
 
+	if prefix == "" {
+		return "", 0, "", false
+	}
+
 	// 숫자 변환
 	number, err := strconv.Atoi(numberStr)
 	if err != nil {
