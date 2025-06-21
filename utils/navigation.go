@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -61,7 +62,7 @@ func ScanFiles(cfg *config.Config) (*ScanReport, error) {
 	// FoldersByDepth 깊이별 폴더 목록 확인
 	// FilesByExt 최종 TargetDepth에서 확장자별 파일 수 확인
 	// TotalFiles 총 파일 수 확인
-	err = filepath.Walk(cfg.SourcePath, func(path string, info os.FileInfo, err error) error {
+	err = filepath.WalkDir(cfg.SourcePath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -76,13 +77,13 @@ func ScanFiles(cfg *config.Config) (*ScanReport, error) {
 			depth = strings.Count(relativePath, string(os.PathSeparator)) + 1
 		}
 
-		if info.IsDir() {
+		if d.IsDir() {
 			// 깊이 제한 체크 + root 제외
 			if depth > 0 && depth <= cfg.TargetDepth {
 				scanReport.FoldersByDepth[depth] = append(scanReport.FoldersByDepth[depth], path)
 			}
 		} else {
-			ext := filepath.Ext(info.Name())
+			ext := filepath.Ext(d.Name())
 			if ext != "" {
 				scanReport.FilesByExt[ext]++
 				scanReport.TotalFiles++
