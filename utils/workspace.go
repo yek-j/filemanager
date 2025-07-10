@@ -28,25 +28,22 @@ func CopyRootDir(cfg *config.Config) error {
 		return err
 	}
 
-	// 플랫폼별 복사 진행
-	platform := getPlatform()
+	if cfg.SelectiveCopy {
+		for _, targetFolder := range cfg.TargetFolders {
+			sourcePath := filepath.Join(cfg.SourcePath, targetFolder)
+			targetPath := filepath.Join(cfg.WorkPath, targetFolder)
 
-	var err error
-
-	switch platform {
-	case "linux", "darwin":
-		err = copyWithCommand(cfg.SourcePath, cfg.WorkPath)
-	case "windows":
-		err = copyWithGo(cfg.SourcePath, cfg.WorkPath)
-	default:
-		err = copyWithGo(cfg.SourcePath, cfg.WorkPath)
+			if err := copyByPlatform(sourcePath, targetPath); err != nil {
+				return fmt.Errorf("copy failed for %s: %v", targetFolder, err)
+			}
+		}
+	} else {
+		if err := copyByPlatform(cfg.SourcePath, cfg.WorkPath); err != nil {
+			return fmt.Errorf("copy failed: %v", err)
+		}
 	}
 
-	if err != nil {
-		return fmt.Errorf("copy failed: %v", err)
-	}
-
-	if !VerifyWorkspace(cfg.SourcePath, cfg.WorkPath) {
+	if !VerifyWorkspace(cfg) {
 		return fmt.Errorf("copy vertification failed")
 	}
 
@@ -109,38 +106,100 @@ func copyFile(path, targetPath string) error {
 }
 
 // VerifyWorkspace: 복사된 폴더에서 폴더의 존재와 파일 개수를 검증한다.
-func VerifyWorkspace(sourcePath, workPath string) bool {
+func VerifyWorkspace(cfg *config.Config) bool {
 	// workPath에 폴더가 존재하는지 확인
-	if _, err := os.Stat(workPath); os.IsNotExist(err) {
+	if _, err := os.Stat(cfg.WorkPath); os.IsNotExist(err) {
 		return false
 	}
 
 	// sourcePath의 폴더/파일 개수 세기
-	oriFiles, oriDirs := 0, 0
-	filepath.WalkDir(sourcePath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			oriDirs++
-		} else {
-			oriFiles++
-		}
-		return nil
-	})
+	if cfg.SelectiveCopy {
+		// selective_copy 모드: target_folders별로 검증
+		for _, targetFolder := range cfg.TargetFolders {
+			sourceFolderPath := filepath.Join(cfg.SourcePath, targetFolder)
+			workFolderPath := filepath.Join(cfg.WorkPath, targetFolder)
 
-	workFiles, workDirs := 0, 0
-	filepath.WalkDir(workPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			workDirs++
-		} else {
-			workFiles++
-		}
-		return nil
-	})
+			// workPath 폴더 존재 확인
+			if _, err := os.Stat(workFolderPath); os.IsNotExist(err) {
+				return false
+			}
 
-	return oriFiles == workFiles && oriDirs == workDirs
+			// sourceFolderPath 파일/폴더 개수 세기
+			oriFiles, oriDirs := 0, 0
+			filepath.WalkDir(sourceFolderPath, func(path string, d fs.DirEntry, err error) error {
+				if err != nil {
+					return err
+				}
+				if d.IsDir() {
+					oriDirs++
+				} else {
+					oriFiles++
+				}
+				return nil
+			})
+
+			// workFolderPath 파일/폴더 개수 세기
+			workFiles, workDirs := 0, 0
+			filepath.WalkDir(workFolderPath, func(path string, d fs.DirEntry, err error) error {
+				if err != nil {
+					return err
+				}
+				if d.IsDir() {
+					workDirs++
+				} else {
+					workFiles++
+				}
+				return nil
+			})
+
+			// 개수 비교
+			if oriFiles != workFiles || oriDirs != workDirs {
+				return false
+			}
+		}
+		return true
+	} else {
+		oriFiles, oriDirs := 0, 0
+		filepath.WalkDir(cfg.SourcePath, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				oriDirs++
+			} else {
+				oriFiles++
+			}
+			return nil
+		})
+
+		workFiles, workDirs := 0, 0
+		filepath.WalkDir(cfg.WorkPath, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				workDirs++
+			} else {
+				workFiles++
+			}
+			return nil
+		})
+
+		return oriFiles == workFiles && oriDirs == workDirs
+	}
+
+}
+
+// copyByPlatform: 플랫폼별 코드 복사 분기
+func copyByPlatform(sourcePath, destPath string) error {
+	platform := getPlatform()
+
+	switch platform {
+	case "linux", "darwin":
+		return copyWithCommand(sourcePath, destPath)
+	case "windows":
+		return copyWithGo(sourcePath, destPath)
+	default:
+		return copyWithGo(sourcePath, destPath)
+	}
 }

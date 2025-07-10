@@ -1,7 +1,11 @@
 {
-  "source_path": "/path/to/root",
-  "work_path": "/path/to/work", 
-  "target_folders": ["paper"],
+  "source_path": "/root/path",
+  "work_path": "/work/path", 
+  "target_folders": ["paper", "user"],
   "file_depth": 3,
-  "plugin": "underscore_number"
+  "plugin": "underscore_number",
+  "selective_copy": true,
+  "plugin_config": {
+    "allowed_extensions": ["pdf", "txt"]
+  }
 }

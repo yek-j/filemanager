@@ -7,11 +7,13 @@ import (
 
 // Config 구조체 - JSON 설정과 파일 매핑
 type Config struct {
-	SourcePath    string   `json:"source_path"`
-	WorkPath      string   `json:"work_path"`
-	TargetFolders []string `json:"target_folders"`
-	TargetDepth   int      `json:"file_depth"`
-	Plugin        string   `json:"plugin"`
+	SourcePath    string          `json:"source_path"`
+	WorkPath      string          `json:"work_path"`
+	TargetFolders []string        `json:"target_folders"`
+	TargetDepth   int             `json:"file_depth"`
+	Plugin        string          `json:"plugin"`
+	SelectiveCopy bool            `json:"selective_copy,omitempty"`
+	PluginConfig  json.RawMessage `json:"plugin_config,omitempty"`
 }
 
 // LoadConfig JSON 파일에서 설정을 읽어 온다.

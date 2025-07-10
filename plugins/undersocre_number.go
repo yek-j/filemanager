@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,11 +26,27 @@ type ProcessLog struct {
 	TotalFiles   int
 }
 
+type UnderscoreNumberConfig struct {
+	AllowedExtensions []string `json:"allowed_extensions"`
+}
+
 func (u *UnderscoreNumber) Process(cfg *config.Config) error {
 	totalProcessed := 0
 	log := &ProcessLog{
 		RenamedFiles: make(map[string]string),
 	}
+
+	// 기본값으로 빈 구조체 생성
+	var pluginConfig UnderscoreNumberConfig
+
+	// PluginConfig가 있으면 파싱
+	if len(cfg.PluginConfig) > 0 {
+		err := json.Unmarshal(cfg.PluginConfig, &pluginConfig)
+		if err != nil {
+			return fmt.Errorf("failed to parse plugin config: %v", err)
+		}
+	}
+
 	// 작업할 폴더들 찾기
 	// cfg.WorkPath + cfg.TargetFolders + cfg.TargetDepth 조합
 	// 원하는 위치에서 파일 수집
@@ -38,7 +55,7 @@ func (u *UnderscoreNumber) Process(cfg *config.Config) error {
 		basePath := filepath.Join(cfg.WorkPath, targetFolder)
 
 		// target_depth로 들어가기
-		processed, err := processTargetDepth(basePath, cfg.TargetDepth, log)
+		processed, err := processTargetDepth(basePath, cfg.TargetDepth, pluginConfig, log)
 		if err != nil {
 			return err
 		}
@@ -59,7 +76,7 @@ func (u *UnderscoreNumber) Process(cfg *config.Config) error {
 	return nil
 }
 
-func processTargetDepth(basePath string, depth int, log *ProcessLog) (int, error) {
+func processTargetDepth(basePath string, depth int, pluginConfig UnderscoreNumberConfig, log *ProcessLog) (int, error) {
 	currentDirs := []string{basePath}
 
 	// 'depth - 1' 반복으로 최종 폴더 찾기
@@ -87,7 +104,7 @@ func processTargetDepth(basePath string, depth int, log *ProcessLog) (int, error
 	// 최종 폴더들에서 파일을 처리
 	processedFilesCount := 0
 	for _, finalDir := range currentDirs {
-		count, err := processFilesInDirectory(finalDir, log)
+		count, err := processFilesInDirectory(finalDir, pluginConfig, log)
 		processedFilesCount += count
 		if err != nil {
 			return processedFilesCount, err
@@ -96,7 +113,7 @@ func processTargetDepth(basePath string, depth int, log *ProcessLog) (int, error
 	return processedFilesCount, nil
 }
 
-func processFilesInDirectory(finalDir string, log *ProcessLog) (int, error) {
+func processFilesInDirectory(finalDir string, pluginConfig UnderscoreNumberConfig, log *ProcessLog) (int, error) {
 	// 폴더 안의 파일들만 읽기(하위폴더 제외)
 	entires, err := os.ReadDir(finalDir)
 	processFileCount := 0
@@ -131,7 +148,13 @@ func processFilesInDirectory(finalDir string, log *ProcessLog) (int, error) {
 
 	// 각 그룹에서 최대 숫자 파일만 남기고 삭제
 	// 남은 파일을 prefix_1.확장자로 변경
-	for _, files := range groups {
+	for groupKey, files := range groups {
+		ext := filepath.Ext(groupKey)
+
+		if !isAllowedExtension(ext, pluginConfig.AllowedExtensions) {
+			continue
+		}
+
 		// 최대 숫자 찾기
 		maxFile := files[0]
 		for _, file := range files {
@@ -211,6 +234,24 @@ func parseFileName(filename string) (prefix string, number int, ext string, vali
 	}
 
 	return prefix, number, ext, true
+}
+
+func isAllowedExtension(ext string, allowedExtensions []string) bool {
+	// 설정이 없으면 모든 확장자 허용
+	if len(allowedExtensions) == 0 {
+		return true
+	}
+
+	// 점 제거
+	ext = strings.TrimPrefix(ext, ".")
+
+	for _, allowed := range allowedExtensions {
+		if ext == allowed {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (u *UnderscoreNumber) GetName() string {
