@@ -62,35 +62,69 @@ func ScanFiles(cfg *config.Config) (*ScanReport, error) {
 	// FoldersByDepth 깊이별 폴더 목록 확인
 	// FilesByExt 최종 TargetDepth에서 확장자별 파일 수 확인
 	// TotalFiles 총 파일 수 확인
-	err = filepath.WalkDir(cfg.SourcePath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
+	if cfg.SelectiveCopy {
+		for _, targetFolder := range cfg.TargetFolders {
+			targetPath := filepath.Join(cfg.SourcePath, targetFolder)
+
+			err = filepath.WalkDir(targetPath, func(path string, d fs.DirEntry, err error) error {
+				// 기존 로직 그대로 사용하되...
+				// relativePath 계산만 targetPath 기준으로 변경
+				relativePath := strings.TrimPrefix(path, targetPath)
+				relativePath = strings.TrimPrefix(relativePath, string(os.PathSeparator))
+
+				// 나머지는 기존과 동일...
+				var depth int
+				if relativePath == "" {
+					depth = 0
+				} else {
+					depth = strings.Count(relativePath, string(os.PathSeparator)) + 1
+				}
+				if d.IsDir() {
+					// 깊이 제한 체크 + root 제외
+					if depth > 0 && depth <= cfg.TargetDepth {
+						scanReport.FoldersByDepth[depth] = append(scanReport.FoldersByDepth[depth], path)
+					}
+				} else {
+					ext := filepath.Ext(d.Name())
+					if ext != "" {
+						scanReport.FilesByExt[ext]++
+						scanReport.TotalFiles++
+					}
+				}
+				return nil
+			})
 		}
-
-		var depth int
-		relativePath := strings.TrimPrefix(path, cfg.SourcePath)
-		relativePath = strings.TrimPrefix(relativePath, string(os.PathSeparator)) // '/' 제거
-
-		if relativePath == "" {
-			depth = 0 // root 자체
-		} else {
-			depth = strings.Count(relativePath, string(os.PathSeparator)) + 1
-		}
-
-		if d.IsDir() {
-			// 깊이 제한 체크 + root 제외
-			if depth > 0 && depth <= cfg.TargetDepth {
-				scanReport.FoldersByDepth[depth] = append(scanReport.FoldersByDepth[depth], path)
+	} else {
+		err = filepath.WalkDir(cfg.SourcePath, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
 			}
-		} else {
-			ext := filepath.Ext(d.Name())
-			if ext != "" {
-				scanReport.FilesByExt[ext]++
-				scanReport.TotalFiles++
+
+			var depth int
+			relativePath := strings.TrimPrefix(path, cfg.SourcePath)
+			relativePath = strings.TrimPrefix(relativePath, string(os.PathSeparator)) // '/' 제거
+
+			if relativePath == "" {
+				depth = 0 // root 자체
+			} else {
+				depth = strings.Count(relativePath, string(os.PathSeparator)) + 1
 			}
-		}
-		return nil
-	})
+
+			if d.IsDir() {
+				// 깊이 제한 체크 + root 제외
+				if depth > 0 && depth <= cfg.TargetDepth {
+					scanReport.FoldersByDepth[depth] = append(scanReport.FoldersByDepth[depth], path)
+				}
+			} else {
+				ext := filepath.Ext(d.Name())
+				if ext != "" {
+					scanReport.FilesByExt[ext]++
+					scanReport.TotalFiles++
+				}
+			}
+			return nil
+		})
+	}
 
 	if err != nil {
 		return scanReport, fmt.Errorf("failed to scan directory structure: %v", err)

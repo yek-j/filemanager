@@ -119,11 +119,6 @@ func VerifyWorkspace(cfg *config.Config) bool {
 			sourceFolderPath := filepath.Join(cfg.SourcePath, targetFolder)
 			workFolderPath := filepath.Join(cfg.WorkPath, targetFolder)
 
-			// workPath 폴더 존재 확인
-			if _, err := os.Stat(workFolderPath); os.IsNotExist(err) {
-				return false
-			}
-
 			// sourceFolderPath 파일/폴더 개수 세기
 			oriFiles, oriDirs := 0, 0
 			filepath.WalkDir(sourceFolderPath, func(path string, d fs.DirEntry, err error) error {
