@@ -30,3 +30,8 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# 테스트 파일
+filemanager-config_test.json
+filemanager-linux
+window-test.json
