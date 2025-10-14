@@ -12,7 +12,9 @@ import (
 	"github.com/yek-j/filemanager/config"
 )
 
-type UnderscoreNumber struct{}
+type UnderscoreNumber struct {
+	pluginCfg *config.PluginConfig
+}
 
 type FileInfo struct {
 	FileName string
@@ -28,6 +30,7 @@ type ProcessLog struct {
 
 type UnderscoreNumberConfig struct {
 	AllowedExtensions []string `json:"allowed_extensions"`
+	TargetFolders     []string `json:"target_folders"`
 }
 
 func (u *UnderscoreNumber) Process(cfg *config.Config) error {
@@ -37,25 +40,25 @@ func (u *UnderscoreNumber) Process(cfg *config.Config) error {
 	}
 
 	// 기본값으로 빈 구조체 생성
-	var pluginConfig UnderscoreNumberConfig
+	var underscorePluginConfig UnderscoreNumberConfig
 
-	// PluginConfig가 있으면 파싱
-	if len(cfg.PluginConfig) > 0 {
-		err := json.Unmarshal(cfg.PluginConfig, &pluginConfig)
+	// Config가 있으면 파싱
+	if u.pluginCfg != nil && len(u.pluginCfg.Config) > 0 {
+		err := json.Unmarshal(u.pluginCfg.Config, &underscorePluginConfig)
 		if err != nil {
 			return fmt.Errorf("failed to parse plugin config: %v", err)
 		}
 	}
 
 	// 작업할 폴더들 찾기
-	// cfg.WorkPath + cfg.TargetFolders + cfg.TargetDepth 조합
+	// cfg.WorkPath + underscorePluginConfig.TargetFolders + cfg.TargetDepth 조합
 	// 원하는 위치에서 파일 수집
-	for _, targetFolder := range cfg.TargetFolders {
+	for _, targetFolder := range underscorePluginConfig.TargetFolders {
 		// workPath/targetFolder
 		basePath := filepath.Join(cfg.WorkPath, targetFolder)
 
 		// target_depth로 들어가기
-		processed, err := processTargetDepth(basePath, cfg.TargetDepth, pluginConfig, log)
+		processed, err := processTargetDepth(basePath, cfg.TargetDepth, underscorePluginConfig, log)
 		if err != nil {
 			return err
 		}

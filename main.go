@@ -57,19 +57,27 @@ func main() {
 		copyDuration := time.Since(copyStartTime)
 		fmt.Printf("✅ Backup completed in %v\n", copyDuration)
 
-		// 플러그인 실행
+		// 플러그인 실행 - 순서대로
 		processStartTime := time.Now()
-		plugin, err := plugins.GetPlugin(cfg.Plugin)
-		if err != nil {
-			log.Fatal("Plugin not found: ", err)
+		for _, pluginCfg := range cfg.Plugin {
+			pluginStartTime := time.Now()
+			plugin, err := plugins.GetPlugin(&pluginCfg)
+			if err != nil {
+				log.Fatal("Plugin not found: ", err)
+			}
+
+			fmt.Printf("Plugin: %s\n", plugin.GetName())
+			err = plugin.Process(cfg)
+
+			if err != nil {
+				log.Fatal("Plugin process failed: ", err)
+			}
+
+			fmt.Printf("⭕ %s Plugin processing completed\n", pluginCfg.Name)
+			pluginDuration := time.Since(pluginStartTime)
+			fmt.Printf("%s Plugin work time: %v\n", pluginCfg.Name, pluginDuration)
 		}
 
-		fmt.Printf("Plugin: %s\n", plugin.GetName())
-		err = plugin.Process(cfg)
-
-		if err != nil {
-			log.Fatal("Plugin process failed: ", err)
-		}
 		fmt.Println("✅ Plugin processing completed")
 		processDuration := time.Since(processStartTime)
 		fmt.Printf("✅ File processing completed in %v\n", processDuration)

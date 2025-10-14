@@ -1,11 +1,26 @@
 {
   "source_path": "/root/path",
   "work_path": "/work/path", 
-  "target_folders": ["paper", "user"],
+  "target_folders": ["paper", "user"],  
   "file_depth": 3,
-  "plugin": "underscore_number",
-  "selective_copy": true,
-  "plugin_config": {
-    "allowed_extensions": ["pdf", "txt"]
-  }
+  "plugin": [
+    {
+      "name": "underscore_number",
+      "config": {
+        "allowed_extensions": ["pdf", "txt"],
+        "target_folders": ["paper", "user"]
+      }
+    }, 
+    {
+      "name": "pattern_mover",
+      "config": {
+        "file_extensions": ["mp3", "png"],
+        "source_location": "music",
+        "target_location": "files",
+        "create_folder": true,
+        "target_folders": ["paper"]
+      }
+    }
+  ],
+  "selective_copy": true
 }
