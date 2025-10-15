@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/yek-j/filemanager/config"
+	"github.com/yek-j/filemanager/utils"
 )
 
 type UnderscoreNumber struct {
@@ -22,7 +23,7 @@ type FileInfo struct {
 	FullPath string
 }
 
-type ProcessLog struct {
+type UnderscoreNumberLog struct {
 	DeletedFiles []string          // 삭제된 파일 리스트
 	RenamedFiles map[string]string // 원본->새이름
 	TotalFiles   int
@@ -35,16 +36,16 @@ type UnderscoreNumberConfig struct {
 
 func (u *UnderscoreNumber) Process(cfg *config.Config) error {
 	totalProcessed := 0
-	log := &ProcessLog{
+	log := &UnderscoreNumberLog{
 		RenamedFiles: make(map[string]string),
 	}
 
 	// 기본값으로 빈 구조체 생성
-	var underscorePluginConfig UnderscoreNumberConfig
+	var pluginConfig UnderscoreNumberConfig
 
 	// Config가 있으면 파싱
 	if u.pluginCfg != nil && len(u.pluginCfg.Config) > 0 {
-		err := json.Unmarshal(u.pluginCfg.Config, &underscorePluginConfig)
+		err := json.Unmarshal(u.pluginCfg.Config, &pluginConfig)
 		if err != nil {
 			return fmt.Errorf("failed to parse plugin config: %v", err)
 		}
@@ -53,16 +54,20 @@ func (u *UnderscoreNumber) Process(cfg *config.Config) error {
 	// 작업할 폴더들 찾기
 	// cfg.WorkPath + underscorePluginConfig.TargetFolders + cfg.TargetDepth 조합
 	// 원하는 위치에서 파일 수집
-	for _, targetFolder := range underscorePluginConfig.TargetFolders {
+	for _, targetFolder := range pluginConfig.TargetFolders {
 		// workPath/targetFolder
 		basePath := filepath.Join(cfg.WorkPath, targetFolder)
 
-		// target_depth로 들어가기
-		processed, err := processTargetDepth(basePath, cfg.TargetDepth, underscorePluginConfig, log)
-		if err != nil {
-			return err
+		// 작업할 경로
+		workDirs := utils.GetTargetDirs(basePath, cfg.TargetDepth)
+
+		for _, finalDir := range workDirs {
+			count, err := processDir(finalDir, pluginConfig, log)
+			totalProcessed += count
+			if err != nil {
+				return err
+			}
 		}
-		totalProcessed += processed
 	}
 
 	log.TotalFiles = totalProcessed
@@ -79,44 +84,7 @@ func (u *UnderscoreNumber) Process(cfg *config.Config) error {
 	return nil
 }
 
-func processTargetDepth(basePath string, depth int, pluginConfig UnderscoreNumberConfig, log *ProcessLog) (int, error) {
-	currentDirs := []string{basePath}
-
-	// 'depth - 1' 반복으로 최종 폴더 찾기
-	for i := 1; i < depth; i++ {
-		nextDirs := []string{}
-
-		for _, dir := range currentDirs {
-			// dir의 하위 폴더들 읽기
-			entries, err := os.ReadDir(dir)
-
-			if err != nil {
-				continue // 읽을 수 없다면 스킵
-			}
-
-			for _, entry := range entries {
-				if entry.IsDir() {
-					nextDirs = append(nextDirs, filepath.Join(dir, entry.Name()))
-				}
-			}
-		}
-
-		currentDirs = nextDirs
-	}
-
-	// 최종 폴더들에서 파일을 처리
-	processedFilesCount := 0
-	for _, finalDir := range currentDirs {
-		count, err := processFilesInDirectory(finalDir, pluginConfig, log)
-		processedFilesCount += count
-		if err != nil {
-			return processedFilesCount, err
-		}
-	}
-	return processedFilesCount, nil
-}
-
-func processFilesInDirectory(finalDir string, pluginConfig UnderscoreNumberConfig, log *ProcessLog) (int, error) {
+func processDir(finalDir string, pluginConfig UnderscoreNumberConfig, log *UnderscoreNumberLog) (int, error) {
 	// 폴더 안의 파일들만 읽기(하위폴더 제외)
 	entires, err := os.ReadDir(finalDir)
 	processFileCount := 0
@@ -188,7 +156,7 @@ func processFilesInDirectory(finalDir string, pluginConfig UnderscoreNumberConfi
 	return processFileCount, nil
 }
 
-func writeLogFile(log *ProcessLog, logPath string) error {
+func writeLogFile(log *UnderscoreNumberLog, logPath string) error {
 	file, err := os.Create(logPath)
 	if err != nil {
 		return err
