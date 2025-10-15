@@ -162,3 +162,32 @@ func IsWorkPathEmpty(workPath string) bool {
 
 	return len(workDir) == 0 // 빈 폴더면 true
 }
+
+// GetTargetDirs: 작업이 필요한 경로 반환
+func GetTargetDirs(basePath string, depth int) ([]string) {
+	currentDirs := []string{basePath}
+
+	// 'depth - 1' 반복으로 최종 폴더 찾기
+	for i := 1; i < depth; i++ {
+		nextDirs := []string{}
+
+		for _, dir := range currentDirs {
+			// dir의 하위 폴더들 읽기
+			entries, err := os.ReadDir(dir)
+
+			if err != nil {
+				continue // 읽을 수 없다면 스킵
+			}
+
+			for _, entry := range entries {
+				if entry.IsDir() {
+					nextDirs = append(nextDirs, filepath.Join(dir, entry.Name()))
+				}
+			}
+		}
+
+		currentDirs = nextDirs
+	}
+
+	return currentDirs
+}
