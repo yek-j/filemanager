@@ -180,7 +180,7 @@ FileManager는 패턴 기반으로 파일을 정리하는 도구입니다. 안�
 
 | 설정 항목 | 설명 | 타입 | 필수 | 기본값 |
 |-----------|------|------|------|--------|
-| `file_extensions` | 이동할 파일 확장자 목록 (점 제외) | `string[]` | ✅ | - |
+| `file_extensions` | 이동할 파일 확장자 목록 (점 제외) | `string[]` | ❌ | - |
 | `file_pattern` | 파일명 필터링 정규식 (선택적) | `string` | ❌ | - |
 | `source_location` | 파일이 위치한 경로 (상대 경로) | `string` | ✅ | - |
 | `target_location` | 이동할 대상 경로 (상대 경로) | `string` | ✅ | - |

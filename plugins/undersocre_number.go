@@ -76,7 +76,7 @@ func (u *UnderscoreNumber) Process(cfg *config.Config) error {
 		time.Now().Format("20060102_150405"))
 	logPath := filepath.Join(cfg.WorkPath, logFileName)
 
-	if err := writeLogFile(log, logPath); err != nil {
+	if err := writeUnderscoreNumberLogFile(log, logPath); err != nil {
 		fmt.Printf("Warning: Failed to write log file: %v\n", err)
 	} else {
 		fmt.Printf("📝 Log file created: %s\n", logPath)
@@ -156,7 +156,7 @@ func processDir(finalDir string, pluginConfig UnderscoreNumberConfig, log *Under
 	return processFileCount, nil
 }
 
-func writeLogFile(log *UnderscoreNumberLog, logPath string) error {
+func writeUnderscoreNumberLogFile(log *UnderscoreNumberLog, logPath string) error {
 	file, err := os.Create(logPath)
 	if err != nil {
 		return err
